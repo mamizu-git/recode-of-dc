@@ -39,7 +39,7 @@
   button[disabled] { opacity: .5; cursor: not-allowed; }
 </style>
 
-<h1>戦績入力</h1>
+<h1>戦績入力フォーム（<a href="https://docs.google.com/spreadsheets/d/1AS7TdoMZoeTsUyApYJ_THAbuayC-nbkebi3m4wkL2W0" target="_blank">これまでの戦績</a>）</h1>
 
 <form id="match-form">
   <div class="row">
@@ -57,9 +57,9 @@
       <label><input type="radio" name="opponent" value="不明"><span>不明</span></label>
       <!-- その他 -->
       <label><input type="radio" name="opponent" value="other"><span>その他</span></label>
+      <input type="text" id="opponent-other" placeholder="その他" style="margin-top:.5rem; display:none;">
     </div>
     <!-- その他の自由入力（その他選択時のみ表示／任意入力） -->
-    <input type="text" id="opponent-other" placeholder="デッキ名を入力（空なら「その他」で送信）" style="margin-top:.5rem; display:none;">
   </div>
 
   <p>結果</p>
