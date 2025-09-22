@@ -59,6 +59,7 @@
       <label><input type="radio" name="opponent" value="other"><span>その他</span></label>
       <input type="text" id="opponent-other" placeholder="その他" style="margin-top:.5rem; display:none;">
     </div>
+    <text id="opponent-other-note" style="color:red; display:none;">※ 何も入力しなければ「その他」で送信されます。</text>
     <!-- その他の自由入力（その他選択時のみ表示／任意入力） -->
   </div>
 
@@ -103,9 +104,11 @@
   document.querySelectorAll('input[name="opponent"]').forEach(radio => {
     radio.addEventListener('change', () => {
       if (radio.value === 'other' && radio.checked) {
+        document.getElementById('opponent-other-note').style.display = 'block';
         otherInput.style.display = 'block';
         otherInput.focus();
       } else if (radio.checked) {
+        document.getElementById('opponent-other-note').style.display = 'none';
         otherInput.style.display = 'none';
         otherInput.value = '';
       }
@@ -170,6 +173,6 @@
 
   // デバッグ表示
   document.getElementById('env').textContent = `Origin: ${location.origin}`;
-  document.getElementById('version').textContent = `Version: 1.2.0`;
+  document.getElementById('version').textContent = `Version: 1.2.1`;
 </script>
 </html>
