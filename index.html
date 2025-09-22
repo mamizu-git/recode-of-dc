@@ -57,9 +57,9 @@
       <label><input type="radio" name="opponent" value="不明"><span>不明</span></label>
       <!-- その他 -->
       <label><input type="radio" name="opponent" value="other"><span>その他</span></label>
-      <input type="text" id="opponent-other" placeholder="その他" style="margin-top:.5rem; display:none;">
+      <input type="text" id="opponent-other" placeholder="その他" style="display:none;">
     </div>
-    <text id="opponent-other-note" style="color:red; display:none;">※ 何も入力しなければ「その他」で送信されます。</text>
+    <text id="opponent-other-note" style="color:red; margin-top:.5rem; display:none;">※ 何も入力しなければ「その他」で送信されます</text>
     <!-- その他の自由入力（その他選択時のみ表示／任意入力） -->
   </div>
 
@@ -173,6 +173,6 @@
 
   // デバッグ表示
   document.getElementById('env').textContent = `Origin: ${location.origin}`;
-  document.getElementById('version').textContent = `Version: 1.2.1`;
+  document.getElementById('version').textContent = `Version: 1.2.2`;
 </script>
 </html>
