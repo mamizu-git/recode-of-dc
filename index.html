@@ -44,15 +44,15 @@
 
 <form id="match-form">
   <div class="row">
-    <input name="player" id="player" placeholder="あなた（Player）" required />
+    <input name="player" id="player" placeholder="プレイヤー名" required />
     <!-- <input name="opponent" id="opponent" placeholder="対戦相手（Opponent）" required /> -->
   </div>
 
   <p>対戦相手のデッキ</p>
   
   <div class="choice-group">
-    <div class="choice-grid">
-      <label><input type="radio" name="opponent" value="ライゼオル" required><span>ライゼオル</span></label>
+    <div class="choice-grid" id="opponent-buttons">
+      <label><input type="radio" name="opponent" value="ライゼオル"><span>ライゼオル</span></label>
       <label><input type="radio" name="opponent" value="M∀LICE"><span>M∀LICE</span></label>
       <label><input type="radio" name="opponent" value="ジェムナイト"><span>ジェムナイト</span></label>
       <label><input type="radio" name="opponent" value="ジェムナイト(後攻型)"><span>ジェムナイト(後攻型)</span></label>
@@ -64,15 +64,15 @@
   <p>結果</p>
 
   <div class="choice-group">
-    <div class="choice-grid">
-      <label><input type="radio" name="result" value="win" required><span>勝ち</span></label>
+    <div class="choice-grid" id="result-buttons">
+      <label><input type="radio" name="result" value="win"><span>勝ち</span></label>
       <label><input type="radio" name="result" value="lose"><span>負け</span></label>
     </div>
   </div>
 
   <!-- <textarea name="notes" id="notes" placeholder="メモ" rows="3"></textarea> -->
 
-  <button type="submit">送信</button>
+  <button type="submit" disabled>送信</button>
   <div id="msg" class="note"></div>
 </form>
 
@@ -90,6 +90,21 @@
 
   const form = document.getElementById('match-form');
   const msg  = document.getElementById('msg');
+  const submitBtn = document.getElementById('submit-btn');
+
+  function updateSubmitState() {
+    const opponentChecked = form.querySelector('input[name="opponent"]:checked');
+    const resultChecked   = form.querySelector('input[name="result"]:checked');
+    submitBtn.disabled = !(opponentChecked && resultChecked);
+  }
+
+  // ラジオボタンにイベントを付与
+  document.querySelectorAll('input[name="opponent"], input[name="result"]').forEach(radio => {
+    radio.addEventListener('change', updateSubmitState);
+  });
+
+  // 初期状態は無効
+  updateSubmitState();
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
