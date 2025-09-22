@@ -41,6 +41,7 @@
 </form>
 
 <footer><span id="env"></span></footer>
+<footer><span id="version"></span></footer>
 
 <script>
   const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxv8mqUirsl4GVgJnDI4qKa8043ufVUqCyLHBqIuuEPNtQgyzM87Epxs3U8D1egYXrthw/exec';
@@ -69,11 +70,9 @@
       const res = await fetch(ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-        body: new URLSearchParams({
-            player, opponent, result, score, notes, apiKey: 'afa34o23r510t73ewf3'
-        }).toString(),
+        body: new URLSearchParams(payload).toString(),
       });
-      const data = await res.json();  // ← ここが通ればOK
+      const data = await res.json();
 
       if (data.ok) {
         msg.className = 'note ok';
@@ -91,5 +90,6 @@
 
   // デバッグ表示
   document.getElementById('env').textContent = `Origin: ${location.origin}`;
+  document.getElementById('version').textContent = `1.0`;
 </script>
 </html>
