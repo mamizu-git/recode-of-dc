@@ -8,14 +8,14 @@
   h1 { font-size: 1.25rem; margin-bottom: .5rem; }
   form { display: grid; gap: .75rem; }
   input, select, textarea, button { font-size: 16px; padding: .6rem .7rem; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+  .row { display: grid; grid-template-columns: 1fr; gap: .75rem; }
   .note { color: #666; font-size: .9rem; }
   .ok { color: #0a6; }
   .err { color: #c00; }
   footer { margin-top: 1.25rem; font-size: .85rem; color: #666; }
   .choice-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 2列 */
+    grid-template-columns: repeat(2, 1fr);
     gap: .5rem;
   }
   .choice-grid label {
@@ -27,9 +27,7 @@
     border-radius: .4rem;
     cursor: pointer;
   }
-  .choice-grid input[type="radio"] {
-    display: none;
-  }
+  .choice-grid input[type="radio"] { display: none; }
   .choice-grid input[type="radio"]:checked + span {
     background: #0a6;
     color: #fff;
@@ -37,19 +35,17 @@
     text-align: center;
     border-radius: .4rem;
   }
+  button[disabled] { opacity: .5; cursor: not-allowed; }
 </style>
 
 <h1>戦績入力</h1>
-<!-- <p class="note">3人チーム向けの簡易入力フォームです。</p> -->
 
 <form id="match-form">
   <div class="row">
     <input name="player" id="player" placeholder="プレイヤー名" required />
-    <!-- <input name="opponent" id="opponent" placeholder="対戦相手（Opponent）" required /> -->
   </div>
 
   <p>対戦相手のデッキ</p>
-  
   <div class="choice-group">
     <div class="choice-grid" id="opponent-buttons">
       <label><input type="radio" name="opponent" value="ライゼオル"><span>ライゼオル</span></label>
@@ -62,7 +58,6 @@
   </div>
 
   <p>結果</p>
-
   <div class="choice-group">
     <div class="choice-grid" id="result-buttons">
       <label><input type="radio" name="result" value="win"><span>勝ち</span></label>
@@ -70,9 +65,7 @@
     </div>
   </div>
 
-  <!-- <textarea name="notes" id="notes" placeholder="メモ" rows="3"></textarea> -->
-
-  <button type="submit" disabled>送信</button>
+  <button type="submit" id="submit-btn" disabled>送信</button>
   <div id="msg" class="note"></div>
 </form>
 
@@ -92,18 +85,21 @@
   const msg  = document.getElementById('msg');
   const submitBtn = document.getElementById('submit-btn');
 
+  // 送信ボタンの活性/非活性を更新
   function updateSubmitState() {
+    const playerFilled   = document.getElementById('player').value.trim().length > 0;
     const opponentChecked = form.querySelector('input[name="opponent"]:checked');
     const resultChecked   = form.querySelector('input[name="result"]:checked');
-    submitBtn.disabled = !(opponentChecked && resultChecked);
+    submitBtn.disabled = !(playerFilled && opponentChecked && resultChecked);
   }
 
-  // ラジオボタンにイベントを付与
+  // ラジオとplayerの入力にイベント付与
   document.querySelectorAll('input[name="opponent"], input[name="result"]').forEach(radio => {
     radio.addEventListener('change', updateSubmitState);
   });
+  document.getElementById('player').addEventListener('input', updateSubmitState);
 
-  // 初期状態は無効
+  // 初期状態の評価
   updateSubmitState();
 
   form.addEventListener('submit', async (e) => {
@@ -111,40 +107,40 @@
     msg.className = 'note';
     msg.textContent = '送信中...';
 
-    // ← ここで player の値を退避
     const playerValue = document.getElementById('player').value.trim();
 
     const payload = {
-      player: playerValue,
+      player  : playerValue,
       opponent: form.querySelector('input[name="opponent"]:checked')?.value || "",
       result  : form.querySelector('input[name="result"]:checked')?.value || "",
-      score   : document.getElementById('score').value.trim(),
-      notes   : document.getElementById('notes').value.trim(),
       apiKey  : API_KEY,
     };
 
     try {
       await fetch(ENDPOINT, {
         method: 'POST',
-        mode: 'no-cors', // 応答は読まない前提
+        mode: 'no-cors',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
         body: new URLSearchParams(payload).toString(),
       });
 
-      // 送信成功とみなしてフォームをリセット（player以外）
-      form.reset();                          // いったん全部クリア
-      document.getElementById('player').value = playerValue; // playerだけ戻す
+      // 成功とみなしリセット（playerは保持）
+      form.reset();
+      document.getElementById('player').value = playerValue;
 
       msg.className = 'note ok';
       msg.textContent = '記録しました';
-  } catch (err) {
+
+      // リセットでボタンが未選択になるので再評価
+      updateSubmitState();
+    } catch (err) {
       msg.className = 'note err';
       msg.textContent = `通信エラー: ${String(err)}`;
-  }
+    }
   });
 
   // デバッグ表示
   document.getElementById('env').textContent = `Origin: ${location.origin}`;
-  document.getElementById('version').textContent = `Version: 1.1.4`;
+  document.getElementById('version').textContent = `Version: 1.1.5`;
 </script>
 </html>
