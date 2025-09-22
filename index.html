@@ -52,39 +52,40 @@
   const preset = params.get('player');
   if (preset) document.getElementById('player').value = preset;
 
-  document.getElementById('match-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const msg = document.getElementById('msg');
-  msg.className = 'note';
-  msg.textContent = '送信中...';
+  const form = document.getElementById('match-form');
+  const msg  = document.getElementById('msg');
 
-  const payload = {
-      player: document.getElementById('player').value.trim(),
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msg.className = 'note';
+    msg.textContent = '送信中...';
+
+    // ← ここで player の値を退避
+    const playerValue = document.getElementById('player').value.trim();
+
+    const payload = {
+      player: playerValue,
       opponent: document.getElementById('opponent').value.trim(),
-      result: document.getElementById('result').value,
-      score: document.getElementById('score').value.trim(),
-      notes: document.getElementById('notes').value.trim(),
-      apiKey: API_KEY,
-  };
+      result  : document.getElementById('result').value,
+      score   : document.getElementById('score').value.trim(),
+      notes   : document.getElementById('notes').value.trim(),
+      apiKey  : API_KEY,
+    };
 
-  try {
+    try {
       await fetch(ENDPOINT, {
-      method: 'POST',
-      mode: 'no-cors', // ← 重要：応答を読まない前提でCORSを回避
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-      body: new URLSearchParams(payload).toString(),
+        method: 'POST',
+        mode: 'no-cors', // 応答は読まない前提
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: new URLSearchParams(payload).toString(),
       });
 
-      // no-cors だとレスポンスは読めないが、ここまで来れば送信OKの見なし
+      // 送信成功とみなしてフォームをリセット（player以外）
+      form.reset();                          // いったん全部クリア
+      document.getElementById('player').value = playerValue; // playerだけ戻す
+
       msg.className = 'note ok';
       msg.textContent = '記録しました';
-      // e.target.reset(); // 必要ならクリア
-
-      const playerValue = document.getElementById('player').value.trim();
-
-      this.reset();
-      document.getElementById('player').value = playerValue; // プレイヤー名
-
   } catch (err) {
       msg.className = 'note err';
       msg.textContent = `通信エラー: ${String(err)}`;
@@ -93,6 +94,6 @@
 
   // デバッグ表示
   document.getElementById('env').textContent = `Origin: ${location.origin}`;
-  document.getElementById('version').textContent = `Version: 1.1.0`;
+  document.getElementById('version').textContent = `Version: 1.1.1`;
 </script>
 </html>
