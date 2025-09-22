@@ -47,49 +47,41 @@
   const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxv8mqUirsl4GVgJnDI4qKa8043ufVUqCyLHBqIuuEPNtQgyzM87Epxs3U8D1egYXrthw/exec';
   const API_KEY  = 'afa34o23r510t73ewf3';
 
-  // ?player=Alice で自動入力
-  const params = new URLSearchParams(location.search);
-  const preset = params.get('player');
-  if (preset) document.getElementById('player').value = preset;
-
   document.getElementById('match-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const msg = document.getElementById('msg');
-    msg.className = 'note'; msg.textContent = '送信中...';
+  e.preventDefault();
+  const msg = document.getElementById('msg');
+  msg.className = 'note';
+  msg.textContent = '送信中...';
 
-    const payload = {
+  const payload = {
       player: document.getElementById('player').value.trim(),
       opponent: document.getElementById('opponent').value.trim(),
       result: document.getElementById('result').value,
       score: document.getElementById('score').value.trim(),
       notes: document.getElementById('notes').value.trim(),
       apiKey: API_KEY,
-    };
+  };
 
-    try {
-      const res = await fetch(ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-        body: new URLSearchParams(payload).toString(),
+  try {
+      await fetch(ENDPOINT, {
+      method: 'POST',
+      mode: 'no-cors', // ← 重要：応答を読まない前提でCORSを回避
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+      body: new URLSearchParams(payload).toString(),
       });
-      const data = await res.json();
 
-      if (data.ok) {
-        msg.className = 'note ok';
-        msg.textContent = `記録しました: ${data.timestamp}`;
-        // e.target.reset(); // 送信後にクリアしたい場合は有効化
-      } else {
-        msg.className = 'note err';
-        msg.textContent = `エラー: ${data.error || 'unknown'}`;
-      }
-    } catch (err) {
+      // no-cors だとレスポンスは読めないが、ここまで来れば送信OKの見なし
+      msg.className = 'note ok';
+      msg.textContent = '記録しました（応答はブラウザ制限で非表示）';
+      // e.target.reset(); // 必要ならクリア
+  } catch (err) {
       msg.className = 'note err';
       msg.textContent = `通信エラー: ${String(err)}`;
-    }
+  }
   });
 
   // デバッグ表示
   document.getElementById('env').textContent = `Origin: ${location.origin}`;
-  document.getElementById('version').textContent = `Version: 1.0.1`;
+  document.getElementById('version').textContent = `Version: 1.0.2`;
 </script>
 </html>
