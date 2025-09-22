@@ -13,16 +13,54 @@
   .ok { color: #0a6; }
   .err { color: #c00; }
   footer { margin-top: 1.25rem; font-size: .85rem; color: #666; }
+  .choice-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2列 */
+    gap: .5rem;
+  }
+  .choice-grid label {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: .6rem 1rem;
+    border: 1px solid #888;
+    border-radius: .4rem;
+    cursor: pointer;
+  }
+  .choice-grid input[type="radio"] {
+    display: none;
+  }
+  .choice-grid input[type="radio"]:checked + span {
+    background: #0a6;
+    color: #fff;
+    width: 100%;
+    text-align: center;
+    border-radius: .4rem;
+  }
 </style>
 
 <h1>戦績入力</h1>
-<p class="note">3人チーム向けの簡易入力フォームです。</p>
+<!-- <p class="note">3人チーム向けの簡易入力フォームです。</p> -->
 
 <form id="match-form">
   <div class="row">
     <input name="player" id="player" placeholder="あなた（Player）" required />
-    <input name="opponent" id="opponent" placeholder="対戦相手（Opponent）" required />
+    <!-- <input name="opponent" id="opponent" placeholder="対戦相手（Opponent）" required /> -->
   </div>
+
+  <p>対戦相手のデッキ</p>
+  <div class="choice-group">
+    <div class="choice-grid">
+      <label><input type="radio" name="opponent" value="ライゼオル" required><span>ライゼオル</span></label>
+      <label><input type="radio" name="opponent" value="M∀LICE"><span>M∀LICE</span></label>
+      <label><input type="radio" name="opponent" value="ジェムナイト"><span>ジェムナイト</span></label>
+      <label><input type="radio" name="opponent" value="ジェムナイト(後攻型)"><span>ジェムナイト(後攻型)</span></label>
+      <label><input type="radio" name="opponent" value="ティアラメンツ"><span>ティアラメンツ</span></label>
+      <label><input type="radio" name="opponent" value="不明"><span>不明</span></label>
+    </div>
+  </div>
+
+  <p>結果</p>
 
   <div class="row">
     <select name="result" id="result" required>
@@ -94,6 +132,6 @@
 
   // デバッグ表示
   document.getElementById('env').textContent = `Origin: ${location.origin}`;
-  document.getElementById('version').textContent = `Version: 1.1.1`;
+  document.getElementById('version').textContent = `Version: 1.1.2`;
 </script>
 </html>
