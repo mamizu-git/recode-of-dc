@@ -77,8 +77,14 @@
 
       // no-cors だとレスポンスは読めないが、ここまで来れば送信OKの見なし
       msg.className = 'note ok';
-      msg.textContent = '記録しました（応答はブラウザ制限で非表示）';
+      msg.textContent = '記録しました';
       // e.target.reset(); // 必要ならクリア
+
+      const playerValue = document.getElementById('player').value.trim();
+
+      this.reset();
+      document.getElementById('player').value = playerValue; // プレイヤー名
+
   } catch (err) {
       msg.className = 'note err';
       msg.textContent = `通信エラー: ${String(err)}`;
@@ -87,6 +93,6 @@
 
   // デバッグ表示
   document.getElementById('env').textContent = `Origin: ${location.origin}`;
-  document.getElementById('version').textContent = `Version: 1.0.3`;
+  document.getElementById('version').textContent = `Version: 1.1.0`;
 </script>
 </html>
