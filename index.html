@@ -13,9 +13,10 @@
   .ok { color: #0a6; }
   .err { color: #c00; }
   footer { margin-top: 1.25rem; font-size: .85rem; color: #666; }
+
   .choice-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr); /* 2列 */
     gap: .5rem;
   }
   .choice-grid label {
@@ -54,7 +55,11 @@
       <label><input type="radio" name="opponent" value="ジェムナイト(後攻型)"><span>ジェムナイト(後攻型)</span></label>
       <label><input type="radio" name="opponent" value="ティアラメンツ"><span>ティアラメンツ</span></label>
       <label><input type="radio" name="opponent" value="不明"><span>不明</span></label>
+      <!-- その他 -->
+      <label><input type="radio" name="opponent" value="other"><span>その他</span></label>
     </div>
+    <!-- その他の自由入力（その他選択時のみ表示／任意入力） -->
+    <input type="text" id="opponent-other" placeholder="デッキ名を入力（空なら「その他」で送信）" style="margin-top:.5rem; display:none;">
   </div>
 
   <p>結果</p>
@@ -84,22 +89,39 @@
   const form = document.getElementById('match-form');
   const msg  = document.getElementById('msg');
   const submitBtn = document.getElementById('submit-btn');
+  const otherInput = document.getElementById('opponent-other');
 
-  // 送信ボタンの活性/非活性を更新
   function updateSubmitState() {
     const playerFilled   = document.getElementById('player').value.trim().length > 0;
     const opponentChecked = form.querySelector('input[name="opponent"]:checked');
     const resultChecked   = form.querySelector('input[name="result"]:checked');
+    // 「その他」入力は任意。opponent が選ばれていればOK
     submitBtn.disabled = !(playerFilled && opponentChecked && resultChecked);
   }
 
-  // ラジオとplayerの入力にイベント付与
-  document.querySelectorAll('input[name="opponent"], input[name="result"]').forEach(radio => {
+  // opponent ラジオの切り替えに応じて「その他」入力の表示/非表示
+  document.querySelectorAll('input[name="opponent"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      if (radio.value === 'other' && radio.checked) {
+        otherInput.style.display = 'block';
+        otherInput.focus();
+      } else if (radio.checked) {
+        otherInput.style.display = 'none';
+        otherInput.value = '';
+      }
+      updateSubmitState();
+    });
+  });
+
+  // result ラジオの変更
+  document.querySelectorAll('input[name="result"]').forEach(radio => {
     radio.addEventListener('change', updateSubmitState);
   });
+
+  // player 入力の変更
   document.getElementById('player').addEventListener('input', updateSubmitState);
 
-  // 初期状態の評価
+  // 初期評価
   updateSubmitState();
 
   form.addEventListener('submit', async (e) => {
@@ -109,17 +131,22 @@
 
     const playerValue = document.getElementById('player').value.trim();
 
+    const opponentRadio = form.querySelector('input[name="opponent"]:checked');
+    const opponentValue = (opponentRadio?.value === 'other')
+      ? (otherInput.value.trim() || 'その他')  // 入力が空なら「その他」で送信
+      : (opponentRadio?.value || '');
+
     const payload = {
       player  : playerValue,
-      opponent: form.querySelector('input[name="opponent"]:checked')?.value || "",
-      result  : form.querySelector('input[name="result"]:checked')?.value || "",
+      opponent: opponentValue,
+      result  : form.querySelector('input[name="result"]:checked')?.value || '',
       apiKey  : API_KEY,
     };
 
     try {
       await fetch(ENDPOINT, {
         method: 'POST',
-        mode: 'no-cors',
+        mode: 'no-cors', // 応答は読まない前提
         headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
         body: new URLSearchParams(payload).toString(),
       });
@@ -127,11 +154,13 @@
       // 成功とみなしリセット（playerは保持）
       form.reset();
       document.getElementById('player').value = playerValue;
+      otherInput.style.display = 'none';
+      otherInput.value = '';
 
       msg.className = 'note ok';
       msg.textContent = '記録しました';
 
-      // リセットでボタンが未選択になるので再評価
+      // ボタン状態を再評価
       updateSubmitState();
     } catch (err) {
       msg.className = 'note err';
@@ -141,6 +170,6 @@
 
   // デバッグ表示
   document.getElementById('env').textContent = `Origin: ${location.origin}`;
-  document.getElementById('version').textContent = `Version: 1.1.5`;
+  document.getElementById('version').textContent = `Version: 1.1.6`;
 </script>
 </html>
