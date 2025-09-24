@@ -7,7 +7,7 @@
   body { font-family: system-ui, -apple-system, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
   h1 { font-size: 1.25rem; margin-bottom: .5rem; }
   form { display: grid; gap: .75rem; }
-  input, select, textarea, button { font-size: 16px; padding: .6rem .7rem; }
+  input, textarea, button { font-size: 16px; padding: .6rem .7rem; }
   .row { display: grid; grid-template-columns: 1fr; gap: .75rem; }
   .note { color: #666; font-size: .9rem; }
   .ok { color: #0a6; }
@@ -16,7 +16,7 @@
 
   .choice-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 2列 */
+    grid-template-columns: repeat(2, 1fr);
     gap: .5rem;
   }
   .choice-grid label {
@@ -37,32 +37,16 @@
     border-radius: .4rem;
   }
   button[disabled] { opacity: .5; cursor: not-allowed; }
-
-  /* DP セクション */
-  .dp-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: .5rem .75rem;
-    align-items: center;
-  }
-  .dp-grid label { color:#333; font-size:.95rem; }
-  .dp-grid .full { grid-column: 1 / -1; }
-  .dp-out {
-    background: #f7f7f7;
-    border: 1px solid #ddd;
-    border-radius: .4rem;
-    padding: .55rem .7rem;
-    min-height: 2.25rem;
 </style>
 
-<h1>戦績入力フォーム（<a href="https://docs.google.com/spreadsheets/d/1AS7TdoMZoeTsUyApYJ_THAbuayC-nbkebi3m4wkL2W0" target="_blank">これまでの戦績</a>）</h1>
+<h1>戦績入力</h1>
 
 <form id="match-form">
   <div class="row">
     <input name="player" id="player" placeholder="プレイヤー名" required />
   </div>
 
-  <p>対戦相手のデッキ</p>
+  <label>対戦相手のデッキ</label>
   <div class="choice-group">
     <div class="choice-grid" id="opponent-buttons">
       <label><input type="radio" name="opponent" value="ライゼオル"><span>ライゼオル</span></label>
@@ -79,7 +63,7 @@
     <!-- その他の自由入力（その他選択時のみ表示／任意入力） -->
   </div>
 
-  <p>結果</p>
+  <label>結果</label>
   <div class="choice-group">
     <div class="choice-grid" id="result-buttons">
       <label><input type="radio" name="result" value="win"><span>勝ち</span></label>
@@ -87,24 +71,9 @@
     </div>
   </div>
 
-  <p>DP</p>
-  <div class="dp-grid">
-    <label for="dp-base">現在のDP（基準）</label>
-    <input type="number" id="dp-base" inputmode="numeric" placeholder="例: 15000" />
-
-    <label for="dp-step">増減幅（1試合）</label>
-    <input type="number" id="dp-step" inputmode="numeric" value="1000" />
-
-    <label>推定DP（試合後）</label>
-    <div class="dp-out" id="dp-estimated">—</div>
-
-    <label for="dp-actual">実測DP（任意）</label>
-    <input type="number" id="dp-actual" inputmode="numeric" placeholder="実測が分かれば入力" />
-
-    <div class="full">
-      <span class="note" id="dp-diff-note">※ 実測を入力すると推定との差分を表示します。</span>
-    </div>
-  </div>
+  <!-- 画面に出すのは dp_est のみ（編集可） -->
+  <label for="dp-est">推定DP（編集可）</label>
+  <input type="number" id="dp-est" inputmode="numeric" placeholder="結果を選ぶと自動計算されます">
 
   <button type="submit" id="submit-btn" disabled>送信</button>
   <div id="msg" class="note"></div>
@@ -114,122 +83,102 @@
 <footer><span id="version"></span></footer>
 
 <script>
+  // ===== 設定 =====
   const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxv8mqUirsl4GVgJnDI4qKa8043ufVUqCyLHBqIuuEPNtQgyzM87Epxs3U8D1egYXrthw/exec';
   const API_KEY  = 'afa34o23r510t73ewf3';
+  const DP_STEP  = 1000;           // 勝ち:+1000 / 負け:-1000（必要なら変更）
 
-  // ?player=Alice で自動入力
-  const params = new URLSearchParams(location.search);
-  const preset = params.get('player');
-  if (preset) document.getElementById('player').value = preset;
+  // ===== 参照 =====
+  const params       = new URLSearchParams(location.search);
+  const preset       = params.get('player');
+  const form         = document.getElementById('match-form');
+  const msg          = document.getElementById('msg');
+  const submitBtn    = document.getElementById('submit-btn');
+  const otherInput   = document.getElementById('opponent-other');
+  const playerEl     = document.getElementById('player');
+  const dpEstEl      = document.getElementById('dp-est');
 
-  const form        = document.getElementById('match-form');
-  const msg         = document.getElementById('msg');
-  const submitBtn   = document.getElementById('submit-btn');
-  const otherInput  = document.getElementById('opponent-other');
-  const dpBaseEl    = document.getElementById('dp-base');
-  const dpStepEl    = document.getElementById('dp-step');
-  const dpEstEl     = document.getElementById('dp-estimated');
-  const dpActualEl  = document.getElementById('dp-actual');
-  const dpDiffNote  = document.getElementById('dp-diff-note');
+  if (preset) playerEl.value = preset;
 
-  // localStorage keys
+  // ===== 基準DP（前回試合後DP）を localStorage に保存・読込 =====
   const keyFor = (player) => `dp:baseline:${player || ''}`;
 
-  // 推定DPを更新
-  function updateEstimated() {
-    const base = Number(dpBaseEl.value);
-    const step = Math.abs(Number(dpStepEl.value || 0));
-    const res  = form.querySelector('input[name="result"]:checked')?.value;
-
-    if (Number.isFinite(base) && Number.isFinite(step) && res) {
-      const est = base + (res === 'win' ? +step : -step);
-      dpEstEl.textContent = String(est);
-      // 実測との差分メモ
-      const actual = Number(dpActualEl.value);
-      if (Number.isFinite(actual)) {
-        const diff = actual - est;
-        dpDiffNote.textContent = `推定との差分: ${diff > 0 ? '+' : ''}${diff}`;
-      } else {
-        dpDiffNote.textContent = '※ 実測を入力すると推定との差分を表示します。';
-      }
-    } else {
-      dpEstEl.textContent = '—';
-      dpDiffNote.textContent = '※ 実測を入力すると推定との差分を表示します。';
-    }
+  function getBaseline(player) {
+    const saved = localStorage.getItem(keyFor(player));
+    // 保存が無いときの初期値（必要に応じて変更）
+    return saved !== null ? Number(saved) : 15000;
   }
 
-  // 送信ボタン活性/非活性
+  function setBaseline(player, value) {
+    localStorage.setItem(keyFor(player), String(value));
+  }
+
+  // ===== UIロジック =====
   function updateSubmitState() {
-    const playerFilled    = document.getElementById('player').value.trim().length > 0;
+    const playerFilled    = playerEl.value.trim().length > 0;
     const opponentChecked = form.querySelector('input[name="opponent"]:checked');
     const resultChecked   = form.querySelector('input[name="result"]:checked');
-    submitBtn.disabled = !(playerFilled && opponentChecked && resultChecked);
+    const estFilled       = dpEstEl.value.trim().length > 0 && !Number.isNaN(Number(dpEstEl.value));
+    submitBtn.disabled = !(playerFilled && opponentChecked && resultChecked && estFilled);
   }
 
-  // opponent ラジオ
+  function recalcDpEst() {
+    const player = playerEl.value.trim();
+    const baseline = getBaseline(player);
+    const res  = form.querySelector('input[name="result"]:checked')?.value;
+
+    if (!player || !res) return; // 条件が揃っていなければ何もしない
+
+    const est = baseline + (res === 'win' ? +DP_STEP : -DP_STEP);
+    // 既にユーザーが手で編集していたら尊重したいが、
+    // 結果変更時は推定で上書きする方が分かりやすいので上書き
+    dpEstEl.value = String(est);
+  }
+
+  // opponent: 「その他」表示制御
   document.querySelectorAll('input[name="opponent"]').forEach(radio => {
     radio.addEventListener('change', () => {
       if (radio.value === 'other' && radio.checked) {
         otherInput.style.display = 'block';
+        document.getElementById('opponent-other-note').style.display = 'block';
         otherInput.focus();
       } else if (radio.checked) {
         otherInput.style.display = 'none';
+        document.getElementById('opponent-other-note').style.display = 'none';
         otherInput.value = '';
       }
       updateSubmitState();
     });
   });
 
-  // result ラジオ
+  // result 選択で dp_est 自動計算
   document.querySelectorAll('input[name="result"]').forEach(radio => {
     radio.addEventListener('change', () => {
+      recalcDpEst();
       updateSubmitState();
-      updateEstimated();
     });
   });
 
-  // プレイヤーが変わったら、その人の基準DPをロード
-  function loadBaselineForPlayer() {
-    const p = document.getElementById('player').value.trim();
-    if (!p) return;
-    const saved = localStorage.getItem(keyFor(p));
-    if (saved !== null) {
-      dpBaseEl.value = saved;
-    } else {
-      // 保存が無いときのデフォルト基準値
-      dpBaseEl.value = 15000; 
-    }
-    updateEstimated();
-  }
-
-  // 初期ロード時に実行
-  window.addEventListener('DOMContentLoaded', () => {
-    loadBaselineForPlayer();
-  });
-
-
-  document.getElementById('player').addEventListener('input', () => {
+  // player 入力で送信可否の再評価（プレイヤーが変わると基準も変わるため、結果を選び直せば再計算されます）
+  playerEl.addEventListener('input', () => {
     updateSubmitState();
-    loadBaselineForPlayer();
   });
 
-  // DP関連の入力変更
-  [dpBaseEl, dpStepEl, dpActualEl].forEach(el => {
-    el.addEventListener('input', updateEstimated);
-  });
+  // dp_est を手入力した場合も送信可否を更新
+  dpEstEl.addEventListener('input', updateSubmitState);
 
   // 初期評価
   updateSubmitState();
-  loadBaselineForPlayer();
 
+  // ===== 送信 =====
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     msg.className = 'note';
     msg.textContent = '送信中...';
 
-    const playerValue = document.getElementById('player').value.trim();
+    const playerValue = playerEl.value.trim();
 
-    // opponent value
+    // opponent
     const opponentRadio = form.querySelector('input[name="opponent"]:checked');
     const opponentValue = (opponentRadio?.value === 'other')
       ? (otherInput.value.trim() || 'その他')
@@ -237,23 +186,15 @@
 
     const resultValue = form.querySelector('input[name="result"]:checked')?.value || '';
 
-    const base = Number(dpBaseEl.value);
-    const step = Math.abs(Number(dpStepEl.value || 0));
-    const est  = (Number.isFinite(base) && Number.isFinite(step) && resultValue)
-      ? base + (resultValue === 'win' ? +step : -step)
-      : '';
-
-    const actual = dpActualEl.value.trim() === '' ? '' : Number(dpActualEl.value);
+    // 送るのは dp_est のみ（試合後DP）
+    const dpEstValue = Number(dpEstEl.value);
 
     const payload = {
-      player   : playerValue,
-      opponent : opponentValue,
-      result   : resultValue,
-      dp_base  : Number.isFinite(base) ? String(base) : '',
-      dp_step  : Number.isFinite(step) ? String(step) : '',
-      dp_est   : (est === '' ? '' : String(est)),
-      dp_actual: (actual === '' ? '' : String(actual)),
-      apiKey   : API_KEY,
+      player    : playerValue,
+      opponent  : opponentValue,
+      result    : resultValue,
+      dp_est    : Number.isFinite(dpEstValue) ? String(dpEstValue) : '',
+      apiKey    : API_KEY,
     };
 
     try {
@@ -264,34 +205,19 @@
         body: new URLSearchParams(payload).toString(),
       });
 
-      // 次回の基準DPを更新（実測があれば実測、なければ推定）
-      const nextBaseline = (actual !== '' && Number.isFinite(actual))
-        ? actual
-        : (est !== '' ? est : null);
-
-      if (nextBaseline !== null) {
-        localStorage.setItem(keyFor(playerValue), String(nextBaseline));
-        dpBaseEl.value = String(nextBaseline); // 画面上も更新
+      // 次回の基準は送信した dp_est
+      if (Number.isFinite(dpEstValue)) {
+        setBaseline(playerValue, dpEstValue);
       }
 
-      // 成功とみなし、選択類はリセット（playerとDP基準は保持）
+      // フォーム整理（playerは保持、dp_est は空に戻して次の試合で再計算）
       const keepPlayer = playerValue;
       form.reset();
-      document.getElementById('player').value = keepPlayer;
-
-      // ★ reset 後に基準DPを画面へ復元（localStorage から）
-      if (nextBaseline !== null) {
-        dpBaseEl.value = String(nextBaseline);
-      } else {
-        // 基準未確定の場合は既定値があるなら入れる（例：15000）
-        // dpBaseEl.value = 15000;
-      }
-
+      playerEl.value = keepPlayer;
       otherInput.style.display = 'none';
       otherInput.value = '';
-      dpActualEl.value = '';
+      dpEstEl.value = '';
       updateSubmitState();
-      updateEstimated();
 
       msg.className = 'note ok';
       msg.textContent = '記録しました';
@@ -303,6 +229,6 @@
 
   // デバッグ表示
   document.getElementById('env').textContent = `Origin: ${location.origin}`;
-  document.getElementById('version').textContent = `Version: 1.3.1`;
+  document.getElementById('version').textContent = `Version: 1.3.2`;
 </script>
 </html>
