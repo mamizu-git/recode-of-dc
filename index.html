@@ -191,10 +191,22 @@
   // プレイヤーが変わったら、その人の基準DPをロード
   function loadBaselineForPlayer() {
     const p = document.getElementById('player').value.trim();
+    if (!p) return;
     const saved = localStorage.getItem(keyFor(p));
-    if (saved !== null) dpBaseEl.value = saved;
+    if (saved !== null) {
+      dpBaseEl.value = saved;
+    } else {
+      // 保存が無いときのデフォルト基準値
+      dpBaseEl.value = 15000; 
+    }
     updateEstimated();
   }
+
+  // 初期ロード時に実行
+  window.addEventListener('DOMContentLoaded', () => {
+    loadBaselineForPlayer();
+  });
+
 
   document.getElementById('player').addEventListener('input', () => {
     updateSubmitState();
@@ -266,6 +278,15 @@
       const keepPlayer = playerValue;
       form.reset();
       document.getElementById('player').value = keepPlayer;
+
+      // ★ reset 後に基準DPを画面へ復元（localStorage から）
+      if (nextBaseline !== null) {
+        dpBaseEl.value = String(nextBaseline);
+      } else {
+        // 基準未確定の場合は既定値があるなら入れる（例：15000）
+        // dpBaseEl.value = 15000;
+      }
+
       otherInput.style.display = 'none';
       otherInput.value = '';
       dpActualEl.value = '';
