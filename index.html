@@ -132,6 +132,7 @@
     const est = baseline + (res === 'win' ? +DP_STEP : -DP_STEP);
     // 既にユーザーが手で編集していたら尊重したいが、
     // 結果変更時は推定で上書きする方が分かりやすいので上書き
+    est = Math.max(0, est);  // DPは0未満にしない
     dpEstEl.value = String(est);
   }
 
@@ -229,6 +230,6 @@
 
   // デバッグ表示
   document.getElementById('env').textContent = `Origin: ${location.origin}`;
-  document.getElementById('version').textContent = `Version: 1.3.2`;
+  document.getElementById('version').textContent = `Version: 1.3.3`;
 </script>
 </html>
