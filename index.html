@@ -106,7 +106,7 @@
   function getBaseline(player) {
     const saved = localStorage.getItem(keyFor(player));
     // 保存が無いときの初期値（必要に応じて変更）
-    return saved !== null ? Number(saved) : 15000;
+    return saved !== null ? Number(saved) : 0;
   }
 
   function setBaseline(player, value) {
@@ -129,7 +129,7 @@
 
     if (!player || !res) return; // 条件が揃っていなければ何もしない
 
-    const est = baseline + (res === 'win' ? +DP_STEP : -DP_STEP);
+    let est = baseline + (res === 'win' ? +DP_STEP : -DP_STEP);
     // 既にユーザーが手で編集していたら尊重したいが、
     // 結果変更時は推定で上書きする方が分かりやすいので上書き
     est = Math.max(0, est);  // DPは0未満にしない
@@ -230,6 +230,6 @@
 
   // デバッグ表示
   document.getElementById('env').textContent = `Origin: ${location.origin}`;
-  document.getElementById('version').textContent = `Version: 1.3.4`;
+  document.getElementById('version').textContent = `Version: 1.3.5`;
 </script>
 </html>
