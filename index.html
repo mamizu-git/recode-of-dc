@@ -44,6 +44,8 @@
 <form id="match-form">
   <div class="row">
     <input name="player" id="player" placeholder="プレイヤー名" required />
+    <label for="deck">使用デッキ（任意）</label>
+    <input name="deck" id="deck" placeholder="使用デッキ">
   </div>
 
   <label>対戦相手のデッキ</label>
@@ -103,6 +105,7 @@
   // ===== 参照 =====
   const params       = new URLSearchParams(location.search);
   const preset       = params.get('player');
+  const deckEl       = document.getElementById('deck');
   const form         = document.getElementById('match-form');
   const msg          = document.getElementById('msg');
   const submitBtn    = document.getElementById('submit-btn');
@@ -111,6 +114,25 @@
   const dpEstEl      = document.getElementById('dp-est');
 
   if (preset) playerEl.value = preset;
+
+    // プレイヤーごとに使用デッキを保存・復元
+  const deckKeyFor = player => `deck:last:${player}`;
+
+  function loadDeck() {
+    const player = playerEl.value.trim();
+    deckEl.value = player
+      ? (localStorage.getItem(deckKeyFor(player)) || '')
+      : '';
+  }
+
+  deckEl.addEventListener('input', () => {
+    const player = playerEl.value.trim();
+    if (player) {
+      localStorage.setItem(deckKeyFor(player), deckEl.value);
+    }
+  });
+
+  loadDeck();
 
   // ===== 基準DP（前回試合後DP）を localStorage に保存・読込 =====
   const keyFor = (player) => `dp:baseline:${player || ''}`;
@@ -129,6 +151,7 @@
   function updateSubmitState() {
     const playerFilled    = playerEl.value.trim().length > 0;
     const opponentChecked = form.querySelector('input[name="opponent"]:checked');
+    const turnChecked     = form.querySelector('input[name="turn"]:checked');
     const resultChecked   = form.querySelector('input[name="result"]:checked');
     const estFilled       = dpEstEl.value.trim().length > 0 && !Number.isNaN(Number(dpEstEl.value));
     submitBtn.disabled = !(playerFilled && opponentChecked && resultChecked && estFilled);
@@ -164,6 +187,13 @@
     });
   });
 
+  // turn 選択で送信可否を更新
+  document.querySelectorAll('input[name="turn"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      updateSubmitState();
+    });
+  });
+
   // result 選択で dp_est 自動計算
   document.querySelectorAll('input[name="result"]').forEach(radio => {
     radio.addEventListener('change', () => {
@@ -174,6 +204,7 @@
 
   // player 入力で送信可否の再評価（プレイヤーが変わると基準も変わるため、結果を選び直せば再計算されます）
   playerEl.addEventListener('input', () => {
+    loadDeck();
     updateSubmitState();
   });
 
@@ -191,6 +222,7 @@
     msg.textContent = '送信中...';
 
     const playerValue = playerEl.value.trim();
+    const deckValue = deckEl.value.trim();
 
     // opponent
     const opponentRadio = form.querySelector('input[name="opponent"]:checked');
@@ -206,6 +238,7 @@
 
     const payload = {
       player    : playerValue,
+      deck      : deckValue,
       opponent  : opponentValue,
       turn      : turnValue,
       result    : resultValue,
@@ -230,6 +263,8 @@
       const keepPlayer = playerValue;
       form.reset();
       playerEl.value = keepPlayer;
+      deckEl.value = deckValue;
+      localStorage.setItem(deckKeyFor(keepPlayer), deckValue);
       otherInput.style.display = 'none';
       otherInput.value = '';
       dpEstEl.value = '';
