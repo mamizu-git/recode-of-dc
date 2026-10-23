@@ -39,7 +39,7 @@
   button[disabled] { opacity: .5; cursor: not-allowed; }
 </style>
 
-<h1>戦績入力フォーム（<a href="https://docs.google.com/spreadsheets/d/1vEQsczSRX8zadWdz_oKa8QiJOQ11z8qGu1CkvmxOuwo" target="_blank">これまでの戦績</a>）</h1>
+<h1>戦績入力フォーム（<a href="https://docs.google.com/spreadsheets/d/1BehCu9lNnIJYgU8hVZMiBAMqs1pY_kv6c3Q1OUg3fnY" target="_blank">これまでの戦績</a>）</h1>
 
 <form id="match-form">
   <div class="row">
@@ -98,7 +98,7 @@
 
 <script>
   // ===== 設定 =====
-  const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwe3hUmfogzg8soPltRSVs106A47L-DordgzJchtGp_enW-wNicgnCUKyYxNj7oPrWV/exec';
+  const ENDPOINT = 'https://script.google.com/macros/s/AKfycbx1LfbJNI-sgUERMmGB34gDxT6r25XXXUy5A6vsSnBbv0Zme2rEqSeobvRNEkK1h1O-6Q/exec';
   const API_KEY  = 'afa34o23r510t73ewf3';
   const DP_STEP  = 1000;           // 勝ち:+1000 / 負け:-1000（必要なら変更）
 
@@ -280,6 +280,6 @@
 
   // デバッグ表示
   document.getElementById('env').textContent = `Origin: ${location.origin}`;
-  document.getElementById('version').textContent = `Version: 1.5.4`;
+  document.getElementById('version').textContent = `Version: 1.5.5`;
 </script>
 </html>
